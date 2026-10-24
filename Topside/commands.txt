@@ -1,0 +1,10 @@
+flatpak install https://dl.flathub.org/repo/appstream/net.meshlab.MeshLab.flatpakref
+
+sudo apt update
+sudo apt install -y flatpak
+
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+flatpak install flathub net.meshlab.MeshLab
+
+flatpak run net.meshlab.MeshLab
