@@ -1,14 +1,12 @@
 import sys
-from PySide6.QtWidgets import QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QMainWindow, QLabel, QWidget, QSlider
+from PySide6.QtWidgets import QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QMainWindow, QLabel, QWidget, QSlider, QSizePolicy
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Qt, Signal, Slot, QThread
 import cv2
-
-pyqtSignal = Signal
-pyqtSlot = Slot
+import numpy as np
 
 class Thread(QThread):
-    changePixmap = pyqtSignal(QImage)
+    newFrame = Signal(np.ndarray)
 
     def run(self):
         self.isRunning = True
@@ -28,13 +26,7 @@ class Thread(QThread):
                         x, y, w, h = cv2.boundingRect(contour)
                         cv2.rectangle(frame, (x,y), (x+w, y+h), (0, 0, 255), 3) #apply rectangle to image
 
-                #convert image to QImage
-                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgbImage.shape
-                bytesPerLine = ch * w
-                convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
-                p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
-                self.changePixmap.emit(p) #Emit signal 
+                self.newFrame.emit(frame) #Emit signal
 
 
 
@@ -46,35 +38,51 @@ class Thread(QThread):
         self.quit()
         self.terminate()
 
-class VideoContainer(QWidget):
+class VideoContainer(QLabel):
     def __init__(self):
         super().__init__()
-        self.title = 'PySide Video'
-        self.left = 100
-        self.top = 100
-        self.fwidth = 640
-        self.fheight = 480
+        self.title = 'Video stream'
         self.initUI()
 
-    @pyqtSlot(QImage)
+    @Slot(np.ndarray)
     def setImage(self, image):
+        #convert image to QImage
+        rgbImage = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgbImage.shape
+        bytesPerLine = ch * w
+        qImage = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+        
+        # convert to pixmap
+        pixmap = QPixmap.fromImage(qImage)
+        scaledPixmap = pixmap.scaled(
+            self.size(), 
+            Qt.AspectRatioMode.KeepAspectRatio, 
+            Qt.TransformationMode.SmoothTransformation
+        )
+
         #update image    
-        self.label.setPixmap(QPixmap.fromImage(image)) #Emitted signal is sent to this slot
+        self.setPixmap(scaledPixmap)
     
     def initUI(self):
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.fwidth, self.fheight)
         self.resize(1200, 800)
         
         # create a label
-        self.label = QLabel(self)        
-        self.label.resize(640, 480)
-        self.th = Thread(self) 
-        self.th.changePixmap.connect(self.setImage) #Thread is connected to Widget
+        self.setAlignment(Qt.AlignCenter)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+        self.th = Thread(self)
+        self.th.newFrame.connect(self.setImage) # Thread is connected to Widget
         self.th.start()
-        self.show()
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("MATE Frontend")
+        self.setCentralWidget(VideoContainer())
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = VideoContainer()
+    window = MainWindow()
+    window.showFullScreen()
     sys.exit(app.exec())
