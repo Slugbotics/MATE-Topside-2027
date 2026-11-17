@@ -34,16 +34,6 @@ class CameraThread(QThread):
             if not ret:
                 self.reconnect()
                 continue
-            #workshop code
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lower = (25, 50, 50)
-            upper = (35, 255, 255)
-            mask = cv2.inRange(hsv, lower, upper)
-            contours, _  = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            for contour in contours:
-                if cv2.contourArea(contour) > 500:
-                    x, y, w, h = cv2.boundingRect(contour)
-                    cv2.rectangle(frame, (x,y), (x+w, y+h), (0, 0, 255), 3) #apply rectangle to image
 
             self.newFrame.emit(frame) #Emit signal
         
