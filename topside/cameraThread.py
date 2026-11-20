@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 from PySide6.QtCore import QThread, Signal
+from ultralytics import YOLO
 
 class CameraThread(QThread):
     newFrame = Signal(np.ndarray)
@@ -24,6 +25,7 @@ class CameraThread(QThread):
             self.cap = None
 
     def run(self):
+        self.model = YOLO("best.pt")
         self.reconnect()
 
         while not self.isInterruptionRequested():
@@ -34,6 +36,9 @@ class CameraThread(QThread):
             if not ret:
                 self.reconnect()
                 continue
+
+            results = self.model.predict(frame, conf=0.5, verbose=False)
+            frame = results[0].plot()
 
             self.newFrame.emit(frame) #Emit signal
         
