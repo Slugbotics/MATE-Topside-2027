@@ -11,6 +11,7 @@ class CameraThread(QThread):
         super().__init__(parent)
         self.camera = camera
         self.cap = None
+        self.model = YOLO("best.pt")
         self.reconnectTime = time.time() - 100
     
     def reconnect(self):
@@ -25,7 +26,6 @@ class CameraThread(QThread):
             self.cap = None
 
     def run(self):
-        self.model = YOLO("best.pt")
         self.reconnect()
 
         while not self.isInterruptionRequested():
