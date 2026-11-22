@@ -39,6 +39,3 @@ class CameraThread(QThread):
         
         if self.cap is not None:
             self.cap.release()
-
-    def stop(self):
-        self.requestInterruption()

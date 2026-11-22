@@ -42,10 +42,8 @@ class VideoContainer(QLabel):
         
         self.th = CameraThread(self.camera, self)
         self.th.newFrame.connect(self.setImage) # Thread is connected to Widget
-        self.th.start()
-
-        QApplication.instance().aboutToQuit.connect(self.stop)
+        QApplication.instance().aboutToQuit.connect(self.th.requestInterruption)
     
-    def stop(self):
-        self.th.stop()
-        self.th.wait()
+    def start(self):
+        self.th.start()
+        QApplication.instance().aboutToQuit.connect(self.th.wait)
